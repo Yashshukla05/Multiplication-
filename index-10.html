@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Multiplication Quiz</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; margin: 0; padding: 20px;
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            box-sizing: border-box;
+        }
+
+        #page-wrapper {
+            background-color: #ffffff; padding: 30px; border-radius: 25px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+            width: 100%; max-width: 620px; text-align: center;
+        }
+
+        /* --- Setup Screen --- */
+        #setup-container { text-align: center; }
+        #welcome-header { font-size: 2.2rem; color: #2c3e50; margin-top: 0; }
+        #encouragement-text { font-size: 1.2rem; color: #555; margin-bottom: 30px; }
+        .difficulty-btn {
+            background: #3498db; color: white; border: none; border-radius: 10px;
+            padding: 15px 25px; font-size: 1.1rem; cursor: pointer;
+            margin: 5px; transition: background-color 0.3s, transform 0.2s;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
+        }
+        .difficulty-btn:hover { background: #2980b9; transform: translateY(-3px); }
+
+        /* --- Quiz Screen --- */
+        #quiz-container { display: none; }
+        #progress-container { margin-bottom: 15px; }
+        #progress-text { font-size: 0.9rem; color: #777; margin: 0; }
+        #progress-bar-full { width: 100%; background-color: #e0e0e0; border-radius: 5px; height: 10px; margin-top: 5px; }
+        #progress-bar-current { height: 100%; width: 0%; background: linear-gradient(to right, #56ab2f, #a8e063); border-radius: 5px; transition: width 0.3s ease; }
+        
+        #timer-display { font-size: 1.2rem; font-weight: bold; color: #e74c3c; margin-bottom: 15px; }
+        #question-text { font-size: 2.5rem; font-weight: bold; color: #34495e; min-height: 70px; }
+        #options-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
+
+        .option-label {
+            display: block; background-color: #5dade2; color: white;
+            padding: 18px; font-size: 1.4rem; border-radius: 12px;
+            cursor: pointer; transition: all 0.2s ease; box-shadow: 0 5px 0 #4a98bf;
+        }
+        .option-label:hover { background-color: #4a98bf; transform: translateY(-2px); }
+        .option-label.answered { cursor: not-allowed; pointer-events: none; }
+        .option-label.correct { background-color: #2ecc71; box-shadow: 0 5px 0 #27ae60; }
+        .option-label.incorrect { background-color: #e74c3c; box-shadow: 0 5px 0 #c0392b; }
+        .option-input { display: none; }
+        
+        #nav-container { display: flex; justify-content: space-between; margin-top: 20px; }
+        .nav-btn {
+            background-color: #9b59b6; color: white; padding: 12px 28px;
+            font-size: 1rem; border-radius: 8px; border: none; cursor: pointer;
+            box-shadow: 0 4px 0 #8e44ad; transition: background-color 0.2s;
+        }
+        .nav-btn:hover:not(:disabled) { background-color: #8e44ad; }
+        .nav-btn:disabled { background-color: #cccccc; box-shadow: 0 4px 0 #999999; cursor: not-allowed; }
+
+        /* --- Result Screen --- */
+        #result-container { display: none; }
+        .result-title { font-size: 1.8rem; color: #2c3e50; margin-bottom: 20px; }
+        .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; text-align: center; }
+        .result-metric { background: #f4f6f7; padding: 15px; border-radius: 10px; }
+        .result-metric h4 { margin: 0 0 5px 0; color: #7f8c8d; font-size: 0.9rem; }
+        .result-metric p { margin: 0; font-size: 1.3rem; font-weight: bold; color: #34495e; }
+        
+        #star-rating { font-size: 1.8rem; margin-top: 10px; }
+        #rating-message { font-size: 1.3rem; font-weight: bold; color: #3498db; margin-bottom: 25px; }
+
+        .action-buttons button {
+            color: white; padding: 12px 25px; font-size: 1rem;
+            border-radius: 10px; border: none; cursor: pointer; margin: 5px 10px;
+        }
+        #restart-btn { background-color: #1abc9c; box-shadow: 0 4px 0 #16a085; }
+        #review-btn { background-color: #3498db; box-shadow: 0 4px 0 #2980b9; }
+        #practice-btn { display: none; background-color: #e67e22; box-shadow: 0 4px 0 #d35400; }
+
+        #review-section { margin-top: 20px; text-align: left; max-height: 400px; overflow-y: auto; padding-right: 10px;}
+        #review-section h3 { text-align: center; }
+        .review-item { padding: 12px; margin-bottom: 10px; border-radius: 8px; }
+        .review-item.correct { background: #eafaf1; border-left: 5px solid #2ecc71; }
+        .review-item.incorrect { background: #fdedec; border-left: 5px solid #e74c3c; }
+    </style>
+</head>
+<body>
+    <div id="page-wrapper">
+        <div id="setup-container">
+            <h1 id="welcome-header">Multiplication Skills Challenge</h1>
+            <p id="encouragement-text">Select your difficulty level to begin. All the Best!</p>
+            <button class="difficulty-btn" onclick="startQuiz(2, 9)">Easy (Tables 2-9)</button>
+            <button class="difficulty-btn" onclick="startQuiz(12, 20)">Medium (Tables 12-20)</button>
+            <button class="difficulty-btn" onclick="startQuiz(21, 35)">Hard (Tables 21-35)</button>
+        </div>
+
+        <div id="quiz-container">
+            <!-- Quiz UI as before -->
+            <div id="progress-container">
+                <p id="progress-text"></p>
+                <div id="progress-bar-full"><div id="progress-bar-current"></div></div>
+            </div>
+            <div id="timer-display">00:00</div>
+            <div id="question-text"></div>
+            <div id="options-container">
+                <div><input type="radio" id="opt1" name="quiz_option" class="option-input"><label for="opt1" class="option-label"></label></div>
+                <div><input type="radio" id="opt2" name="quiz_option" class="option-input"><label for="opt2" class="option-label"></label></div>
+                <div><input type="radio" id="opt3" name="quiz_option" class="option-input"><label for="opt3" class="option-label"></label></div>
+                <div><input type="radio" id="opt4" name="quiz_option" class="option-input"><label for="opt4" class="option-label"></label></div>
+            </div>
+            <div id="nav-container">
+                <button id="back-btn" class="nav-btn">Back</button>
+                <button id="next-btn" class="nav-btn">Next</button>
+            </div>
+        </div>
+
+        <div id="result-container">
+            <!-- Result UI as before -->
+            <h2 class="result-title">Performance Report</h2>
+            <div class="result-grid">
+                <div class="result-metric"><h4>Score</h4><p id="score-display"></p></div>
+                <div class="result-metric"><h4>Accuracy</h4><p id="accuracy-display"></p></div>
+                <div class="result-metric"><h4>Time Taken</h4><p id="time-taken-display"></p></div>
+                <div class="result-metric"><h4>Avg. Time/Ques</h4><p id="avg-time-display"></p></div>
+            </div>
+            <div id="star-rating"></div>
+            <p id="rating-message"></p>
+            <div class="action-buttons">
+                <button id="restart-btn" onclick="location.reload()">New Quiz</button>
+                <button id="review-btn">Review Answers</button>
+                <button id="practice-btn">Practice Mistakes</button>
+            </div>
+            <div id="review-section" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        const elements = {
+            setupContainer: document.getElementById('setup-container'),
+            quizContainer: document.getElementById('quiz-container'),
+            resultContainer: document.getElementById('result-container'),
+            optionLabels: document.querySelectorAll('.option-label'),
+            // ... (other elements are the same)
+            questionText: document.getElementById('question-text'), nextBtn: document.getElementById('next-btn'), backBtn: document.getElementById('back-btn'),
+            timerDisplay: document.getElementById('timer-display'), progressText: document.getElementById('progress-text'), progressBar: document.getElementById('progress-bar-current'),
+            scoreDisplay: document.getElementById('score-display'), accuracyDisplay: document.getElementById('accuracy-display'), timeTakenDisplay: document.getElementById('time-taken-display'),
+            avgTimeDisplay: document.getElementById('avg-time-display'), starRating: document.getElementById('star-rating'), ratingMessage: document.getElementById('rating-message'),
+            reviewBtn: document.getElementById('review-btn'), practiceBtn: document.getElementById('practice-btn'), reviewSection: document.getElementById('review-section')
+        };
+        
+        let questions = [], incorrectQuestions = [], currentQuestionIndex = 0, startTime, timerInterval;
+
+        function startQuiz(min, max, isPractice = false) {
+            elements.setupContainer.style.display = 'none';
+            elements.resultContainer.style.display = 'none';
+            elements.quizContainer.style.display = 'block';
+
+            if (!isPractice) {
+                questions = [];
+                generateQuestions(min, max);
+            }
+            
+            currentQuestionIndex = 0;
+            questions.forEach(q => q.u = null); // Reset answers for practice mode
+            
+            displayQuestion();
+            startTimer();
+        }
+
+        function generateQuestions(min, max) {
+            const used = new Set();
+            while (questions.length < 10) {
+                let num1;
+                do {
+                    num1 = Math.floor(Math.random() * (max - min + 1)) + min;
+                } while (num1 === 11); // Exclude 11 times table
+
+                const num2 = Math.floor(Math.random() * 9) + 1; // Exclude multiplication by 10
+                
+                if (used.has(`${num1}x${num2}`)) continue;
+                used.add(`${num1}x${num2}`);
+                
+                const ans = num1 * num2;
+                const opts = new Set([ans]);
+                while (opts.size < 4) {
+                    const offset = Math.floor(Math.random() * 10) + 1;
+                    const wrong = ans + (Math.random() > 0.5 ? offset : -offset);
+                    if (wrong > 0 && wrong !== ans) opts.add(wrong);
+                }
+                questions.push({ q: `${num1} × ${num2} = ?`, o: Array.from(opts).sort(() => Math.random() - 0.5), a: ans, u: null });
+            }
+        }
+
+        function displayQuestion() {
+            const q = questions[currentQuestionIndex];
+            elements.questionText.textContent = q.q;
+            elements.optionLabels.forEach((label, i) => {
+                label.textContent = q.o[i];
+                label.className = 'option-label';
+                document.getElementById(label.htmlFor).checked = false;
+            });
+            if (q.u !== null) showAnswerFeedback();
+            updateNav();
+            updateProgress();
+        }
+
+        function handleOptionClick(e) {
+            if (questions[currentQuestionIndex].u !== null) return;
+            questions[currentQuestionIndex].u = parseInt(e.target.textContent);
+            showAnswerFeedback();
+            updateNav();
+        }
+
+        function showAnswerFeedback() { /* ... (no changes) ... */
+            const q = questions[currentQuestionIndex];
+            elements.optionLabels.forEach(label => {
+                label.classList.add('answered');
+                if (parseInt(label.textContent) === q.a) label.classList.add('correct');
+                else label.classList.add('incorrect');
+            });
+        }
+        
+        function updateNav() { /* ... (no changes) ... */
+            elements.nextBtn.disabled = questions[currentQuestionIndex].u === null;
+            elements.backBtn.disabled = currentQuestionIndex === 0;
+            elements.nextBtn.textContent = (currentQuestionIndex === questions.length - 1) ? 'Show Results' : 'Next';
+        }
+
+        function updateProgress() { /* ... (no changes) ... */
+            const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+            elements.progressBar.style.width = `${progress}%`;
+            elements.progressText.textContent = `Question ${currentQuestionIndex + 1} of ${questions.length}`;
+        }
+        
+        function showResult() {
+            const timeTaken = stopTimer();
+            elements.quizContainer.style.display = 'none';
+            elements.resultContainer.style.display = 'block';
+
+            const score = questions.filter(q => q.u === q.a).length;
+            incorrectQuestions = questions.filter(q => q.u !== q.a);
+            
+            elements.scoreDisplay.textContent = `${score} / ${questions.length}`;
+            elements.accuracyDisplay.textContent = `${Math.round((score / questions.length) * 100)}%`;
+            elements.timeTakenDisplay.textContent = `${Math.floor(timeTaken/60)}m ${timeTaken%60}s`;
+            elements.avgTimeDisplay.textContent = `${(timeTaken / questions.length).toFixed(1)}s`;
+            
+            const rating = getStarRating(score, questions.length);
+            elements.starRating.innerHTML = rating.stars;
+            elements.ratingMessage.textContent = rating.message;
+
+            if (incorrectQuestions.length > 0) {
+                elements.practiceBtn.style.display = 'inline-block';
+            } else {
+                elements.practiceBtn.style.display = 'none';
+            }
+            setupReview();
+        }
+
+        function getStarRating(score, total) {
+            const percentage = (score / total) * 100;
+            if (percentage >= 90) return { stars: '⭐⭐⭐⭐⭐', message: 'Excellent Work!' };
+            if (percentage >= 70) return { stars: '⭐⭐⭐⭐', message: 'Great Job!' };
+            if (percentage >= 50) return { stars: '⭐⭐⭐', message: 'Good Effort!' };
+            if (percentage >= 30) return { stars: '⭐⭐', message: 'Keep Practicing!' };
+            return { stars: '⭐', message: 'Needs Improvement, You Can Do It!' };
+        }
+
+        function setupReview() { /* ... (no changes) ... */
+            let html = '<h3>Quiz Review</h3>';
+            questions.forEach(q => {
+                const isCorrect = q.u === q.a;
+                html += `<div class="review-item ${isCorrect ? 'correct' : 'incorrect'}"><p><b>Q:</b> ${q.q}</p>${isCorrect ? `<p><b>Your Answer:</b> ${q.u} (Correct)</p>` : `<p><b>Your Answer:</b> ${q.u} (Incorrect)</p><p><b>Correct Answer:</b> ${q.a}</p>`}</div>`;
+            });
+            elements.reviewSection.innerHTML = html;
+        }
+
+        function startTimer() { /* ... (no changes) ... */
+            startTime = new Date();
+            timerInterval = setInterval(() => {
+                const totalSeconds = Math.floor((new Date() - startTime) / 1000);
+                elements.timerDisplay.textContent = `${Math.floor(totalSeconds / 60).toString().padStart(2, '0')}:${(totalSeconds % 60).toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+        
+        function stopTimer() { clearInterval(timerInterval); return Math.floor((new Date() - startTime) / 1000); }
+
+        elements.optionLabels.forEach(label => label.addEventListener('click', handleOptionClick));
+        elements.nextBtn.addEventListener('click', () => { (currentQuestionIndex < questions.length - 1) ? (currentQuestionIndex++, displayQuestion()) : showResult(); });
+        elements.backBtn.addEventListener('click', () => { if (currentQuestionIndex > 0) { currentQuestionIndex--; displayQuestion(); } });
+        elements.reviewBtn.addEventListener('click', () => { elements.reviewSection.style.display = elements.reviewSection.style.display === 'none' ? 'block' : 'none'; });
+        elements.practiceBtn.addEventListener('click', () => {
+            questions = incorrectQuestions;
+            startQuiz(null, null, true);
+        });
+    </script>
+</body>
+</html>
